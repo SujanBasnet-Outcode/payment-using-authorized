@@ -1,17 +1,27 @@
 const { APIContracts, APIControllers } = require("authorizenet");
 const constants = require("./constants.js");
 
-const chargeCreditCard = async (cardNumber, expirationDate, cardCode, amount) => {
+const chargeCreditCard = async ({
+  cardNumber,
+  expirationDate,
+  cardCode,
+  amount,
+}) => {
   const merchantAuthenticationType = createMerchantAuthenticationType();
   const creditCard = createCreditCard(cardNumber, expirationDate, cardCode);
   const paymentType = createPaymentType(creditCard);
-  const transactionRequestType = createTransactionRequestType(paymentType, amount);
+  const transactionRequestType = createTransactionRequestType(
+    paymentType,
+    amount
+  );
 
   const createRequest = new APIContracts.CreateTransactionRequest();
   createRequest.setMerchantAuthentication(merchantAuthenticationType);
   createRequest.setTransactionRequest(transactionRequestType);
 
-  const ctrl = new APIControllers.CreateTransactionController(createRequest.getJSON());
+  const ctrl = new APIControllers.CreateTransactionController(
+    createRequest.getJSON()
+  );
 
   return executeController(ctrl);
 };
@@ -59,7 +69,12 @@ const executeController = (ctrl) => {
 const paymentHandler = async (req, res) => {
   try {
     const { cardNumber, expirationDate, cardCode, amount } = req.body;
-    const response = await chargeCreditCard(cardNumber, expirationDate, cardCode, amount);
+    const response = await chargeCreditCard({
+      cardNumber,
+      expirationDate,
+      cardCode,
+      amount,
+    });
     // Handle the response as needed
     res.json(response);
   } catch (error) {

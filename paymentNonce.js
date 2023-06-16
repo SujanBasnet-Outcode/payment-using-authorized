@@ -1,15 +1,10 @@
 const { APIContracts, APIControllers } = require("authorizenet");
 const constants = require("./constants.js");
 
-const chargeCreditCard = async ({
-  cardNumber,
-  expirationDate,
-  cardCode,
-  amount,
-}) => {
+const createTransactionWithNonce = async (paymentNonce, amount) => {
   const merchantAuthenticationType = createMerchantAuthenticationType();
-  const creditCard = createCreditCard(cardNumber, expirationDate, cardCode);
-  const paymentType = createPaymentType(creditCard);
+  const opaqueData = createOpaqueDataType(paymentNonce);
+  const paymentType = createPaymentType(opaqueData);
   const transactionRequestType = createTransactionRequestType(
     paymentType,
     amount
@@ -34,17 +29,17 @@ const createMerchantAuthenticationType = () => {
   });
 };
 
-const createCreditCard = (cardNumber, expirationDate, cardCode) =>
-  new APIContracts.CreditCardType({
-    cardNumber,
-    expirationDate,
-    cardCode,
+const createOpaqueDataType = (paymentNonce) =>
+  new APIContracts.OpaqueDataType({
+    dataDescriptor: "COMMON.ACCEPT.INAPP.PAYMENT",
+    dataValue: paymentNonce.dataValue,
   });
 
-const createPaymentType = (creditCard) =>
-  new APIContracts.PaymentType({
-    creditCard,
+const createPaymentType = (opaqueData) => {
+  return new APIContracts.PaymentType({
+    opaqueData,
   });
+};
 
 const createTransactionRequestType = (paymentType, amount) =>
   new APIContracts.TransactionRequestType({
@@ -62,23 +57,16 @@ const executeController = (ctrl) =>
     });
   });
 
-const paymentHandler = async (req, res) => {
+const paymentHandlerWithNonce = async (req, res) => {
   try {
-    const { cardNumber, expirationDate, cardCode, amount } = req.body;
-    const response = await chargeCreditCard({
-      cardNumber,
-      expirationDate,
-      cardCode,
-      amount,
-    });
-    // Handle the response as needed
+    const { paymentNonce, amount } = req.body;
+    const response = await createTransactionWithNonce(paymentNonce, amount);
     res.json(response);
   } catch (error) {
-    // Handle any errors that occurred during the payment process
+    console.error("An error occurred during payment:", error);
     res.status(500).json({ error: "Payment failed" });
   }
 };
-
 module.exports = {
-  paymentHandler,
+  paymentHandlerWithNonce,
 };
